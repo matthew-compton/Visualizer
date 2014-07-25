@@ -2,11 +2,11 @@ package com.ambergleam.visualizer;
 
 import android.support.v4.app.Fragment;
 
-public class SunsetActivity extends SingleFragmentActivity {
+public class VisualizerActivity extends SingleFragmentActivity {
 
     @Override
     protected Fragment createFragment() {
-        return new SunsetFragment();
+        return new VisualizerFragment();
     }
 
 }
