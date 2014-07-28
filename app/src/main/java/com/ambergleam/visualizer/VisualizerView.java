@@ -8,10 +8,6 @@ import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.View;
 
-/**
- * A simple class that draws waveform data received from a
- * {@link android.media.audiofx.Visualizer.OnDataCaptureListener#onWaveFormDataCapture }
- */
 public class VisualizerView extends View {
 
     private byte[] mBytes;

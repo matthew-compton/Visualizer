@@ -2,11 +2,8 @@
 <resources>
 
     <string name="app_name">Visualizer</string>
-    <string name="no_audio">No Audio</string>
-
-    <!-- Media Control Buttons -->
-    <string name="play">Play</string>
-    <string name="pause">Pause</string>
-    <string name="stop">Stop</string>
+    <string name="action_play">Play</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_search">Search</string>
 
 </resources>
