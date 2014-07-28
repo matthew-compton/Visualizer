@@ -5,11 +5,12 @@ import android.media.MediaPlayer;
 import android.media.audiofx.Visualizer;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 
 import com.ambergleam.visualizer.AudioPlayer.STATE;
 
@@ -19,7 +20,7 @@ public class VisualizerFragment extends Fragment {
     private Visualizer mVisualizer;
 
     private VisualizerView mVisualizerView;
-    private LinearLayout mLinearLayout;
+    private FrameLayout mFrameLayout;
 
     private ImageView mPlayButton;
     private ImageView mPauseButton;
@@ -30,10 +31,12 @@ public class VisualizerFragment extends Fragment {
         getActivity().setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
         mVisualizerView = new VisualizerView(getActivity());
-        mVisualizerView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
+        params.gravity = Gravity.CENTER;
+        mVisualizerView.setLayoutParams(params);
 
-        mLinearLayout = (LinearLayout) view.findViewById(R.id.frame);
-        mLinearLayout.addView(mVisualizerView);
+        mFrameLayout = (FrameLayout) view.findViewById(R.id.frame);
+        mFrameLayout.addView(mVisualizerView);
 
         mAudioPlayer = new AudioPlayer(getActivity(), R.raw.test_audio);
         mAudioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
