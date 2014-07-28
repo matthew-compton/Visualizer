@@ -5,6 +5,9 @@ import android.media.MediaPlayer;
 
 public class AudioPlayer extends MediaPlayer {
 
+    private Context mContext;
+    private int mAudioId;
+
     private MediaPlayer mPlayer;
 
     public enum STATE {
@@ -16,22 +19,16 @@ public class AudioPlayer extends MediaPlayer {
     private int mLength;
     private STATE mState;
 
-    public AudioPlayer() {
+    public AudioPlayer(Context context, int audioId) {
         mState = STATE.STOPPED;
+        mContext = context;
+        mAudioId = audioId;
     }
 
-    public void play(Context c, int id) {
+    public void play() {
         stop();
-
         mState = STATE.PLAYING;
-        mPlayer = MediaPlayer.create(c, id);
-        mPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                stop();
-            }
-        });
-
+        mPlayer = MediaPlayer.create(mContext, mAudioId);
         mPlayer.start();
     }
 

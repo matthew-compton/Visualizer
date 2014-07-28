@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center|bottom">
 
-        <ImageButton
+        <ImageView
             android:id="@+id/play"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -19,12 +19,13 @@
             android:src="@android:drawable/ic_media_play"
             />
 
-        <ImageButton
+        <ImageView
             android:id="@+id/pause"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:src="@android:drawable/ic_media_pause"
+            android:visibility="gone"
             />
 
     </LinearLayout>
