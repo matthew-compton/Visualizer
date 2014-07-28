@@ -2,7 +2,11 @@
 <resources>
 
     <string name="app_name">Visualizer</string>
-    <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
+    <string name="no_audio">No Audio</string>
+
+    <!-- Media Control Buttons -->
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="stop">Stop</string>
 
 </resources>
