@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -17,7 +18,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
-import android.widget.RelativeLayout;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -32,8 +33,9 @@ public class VisualizerFragment extends Fragment {
     private MediaPlayer mMediaPlayer;
     private Visualizer mVisualizer;
 
+    private LinearLayout mScreen;
+    private FrameLayout mFrame;
     private VisualizerView mVisualizerView;
-    private RelativeLayout mRelativeLayout;
 
     private TextView mTitleTextView;
     private TextView mCurrentTimeTextView;
@@ -52,9 +54,10 @@ public class VisualizerFragment extends Fragment {
 
         getActivity().setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
-        mRelativeLayout = (RelativeLayout) view.findViewById(R.id.frame);
-        mRelativeLayout.setVisibility(View.INVISIBLE);
+        mScreen = (LinearLayout) view.findViewById(R.id.screen);
+        mScreen.setVisibility(View.INVISIBLE);
 
+        mFrame = (FrameLayout) view.findViewById(R.id.frame);
         mTitleTextView = (TextView) view.findViewById(R.id.title);
         mCurrentTimeTextView = (TextView) view.findViewById(R.id.time_current);
         mDurationTimeTextView = (TextView) view.findViewById(R.id.time_total);
@@ -172,7 +175,7 @@ public class VisualizerFragment extends Fragment {
     }
 
     private void updateUI(String name) {
-        mRelativeLayout.setVisibility(View.VISIBLE);
+        mScreen.setVisibility(View.VISIBLE);
         mTitleTextView.setText(StringFormat.getFileNameFormatted(name));
         mDurationTimeTextView.setText(StringFormat.getTimeFormatted(mMediaPlayer.getDuration()));
         mSeekBar.setMax(mMediaPlayer.getDuration());
@@ -206,10 +209,10 @@ public class VisualizerFragment extends Fragment {
 
     private void setup() {
         mVisualizerView = new VisualizerView(getActivity());
-        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        params.addRule(RelativeLayout.CENTER_IN_PARENT);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        params.gravity = Gravity.CENTER;
         mVisualizerView.setLayoutParams(params);
-        mRelativeLayout.addView(mVisualizerView);
+        mFrame.addView(mVisualizerView);
 
         mMediaPlayer = MediaPlayer.create(getActivity(), mAudioId);
         mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
@@ -241,7 +244,9 @@ public class VisualizerFragment extends Fragment {
     private void reset() {
         mCurrentPosition = 0;
         mSeekBar.setProgress(0);
-        mMediaPlayer.pause();
+        if (mMediaPlayer.isPlaying()) {
+            mMediaPlayer.pause();
+        }
         stopTime();
         updateTime();
         getActivity().invalidateOptionsMenu();
@@ -266,7 +271,7 @@ public class VisualizerFragment extends Fragment {
         stopTime();
         updateTime();
         mVisualizer.setEnabled(false);
-        mRelativeLayout.removeView(mVisualizerView);
+        mFrame.removeView(mVisualizerView);
     }
 
     private void showDialog() {
