@@ -8,7 +8,6 @@ import android.media.audiofx.Visualizer;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -17,6 +16,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
+import android.widget.SeekBar;
+import android.widget.TextView;
+
+import org.apache.commons.lang.WordUtils;
 
 import java.lang.reflect.Field;
 
@@ -28,11 +32,16 @@ public class VisualizerFragment extends Fragment {
     private Visualizer mVisualizer;
 
     private VisualizerView mVisualizerView;
-    private FrameLayout mFrameLayout;
+    private RelativeLayout mRelativeLayout;
 
-    private boolean mIsPlaying;
-    private Field mAudioField;
+    private TextView mTitleTextView;
+    private TextView mCurrentTimeTextView;
+    private TextView mDurationTimeTextView;
+    private SeekBar mSeekBar;
+
     private int mAudioId;
+    private boolean mIsPlaying;
+    private int mCurrentPosition;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -41,9 +50,13 @@ public class VisualizerFragment extends Fragment {
 
         getActivity().setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
-        mFrameLayout = (FrameLayout) view.findViewById(R.id.frame);
+        mRelativeLayout = (RelativeLayout) view.findViewById(R.id.frame);
+        mTitleTextView = (TextView) view.findViewById(R.id.title);
+        mCurrentTimeTextView = (TextView) view.findViewById(R.id.time_current);
+        mDurationTimeTextView = (TextView) view.findViewById(R.id.time_total);
+        mSeekBar = (SeekBar) view.findViewById(R.id.seek_bar);
         mIsPlaying = false;
-        mAudioField = null;
+        mAudioId = 0;
 
         return view;
     }
@@ -63,9 +76,19 @@ public class VisualizerFragment extends Fragment {
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.menu, menu);
-        if (mAudioField == null) {
-            MenuItem item = menu.findItem(R.id.action_feedback);
-            item.setVisible(false);
+        MenuItem menuItemFeedback = menu.findItem(R.id.action_feedback);
+        MenuItem menuItemRestart = menu.findItem(R.id.action_restart);
+        if (mAudioId == 0) {
+            menuItemFeedback.setVisible(false);
+            menuItemRestart.setVisible(false);
+        } else {
+            menuItemFeedback.setVisible(true);
+            menuItemRestart.setVisible(true);
+            if (mIsPlaying) {
+                menuItemFeedback.setIcon(android.R.drawable.ic_media_pause);
+            } else {
+                menuItemFeedback.setIcon(android.R.drawable.ic_media_play);
+            }
         }
         super.onCreateOptionsMenu(menu, inflater);
     }
@@ -76,12 +99,22 @@ public class VisualizerFragment extends Fragment {
             case R.id.action_feedback:
                 if (mIsPlaying) {
                     mIsPlaying = false;
-                    item.setIcon(android.R.drawable.ic_media_play);
-                    teardown();
+                    mCurrentPosition = mMediaPlayer.getCurrentPosition();
+                    pause();
                 } else {
                     mIsPlaying = true;
-                    item.setIcon(android.R.drawable.ic_media_pause);
-                    setup();
+                    if (mCurrentPosition == 0) {
+                        setup();
+                    } else {
+                        resume();
+                    }
+                }
+                return true;
+            case R.id.action_restart:
+                if (mMediaPlayer != null) {
+                    mIsPlaying = false;
+                    mCurrentPosition = 0;
+                    teardown();
                 }
                 return true;
             case R.id.action_search:
@@ -92,23 +125,33 @@ public class VisualizerFragment extends Fragment {
         }
     }
 
-    private void setAudio(Field field) {
-        mAudioField = field;
+    private void setAudio(String name) {
         try {
-            mAudioId = field.getInt(field);
+            Field field = R.raw.class.getField(name);
+            int audioId = field.getInt(field);
+            if (mAudioId != audioId) {
+                if (mMediaPlayer != null) {
+                    mIsPlaying = false;
+                    mCurrentPosition = 0;
+                    teardown();
+                }
+                mAudioId = audioId;
+            }
         } catch (IllegalAccessException e) {
             Log.e(TAG, "IllegalAccessException: " + e.getStackTrace());
+        } catch (NoSuchFieldException e) {
+            Log.e(TAG, "NoSuchFieldException: " + e.getStackTrace());
         }
-        getActivity().getActionBar().setTitle(field.getName());
+        mTitleTextView.setText(getFileNameFormatted(name));
         getActivity().invalidateOptionsMenu();
     }
 
     private void setup() {
         mVisualizerView = new VisualizerView(getActivity());
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
-        params.gravity = Gravity.CENTER;
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        params.addRule(RelativeLayout.CENTER_IN_PARENT);
         mVisualizerView.setLayoutParams(params);
-        mFrameLayout.addView(mVisualizerView);
+        mRelativeLayout.addView(mVisualizerView);
 
         mMediaPlayer = MediaPlayer.create(getActivity(), mAudioId);
         mVisualizer = new Visualizer(mMediaPlayer.getAudioSessionId());
@@ -117,30 +160,52 @@ public class VisualizerFragment extends Fragment {
         mVisualizer.setEnabled(true);
 
         mMediaPlayer.start();
+        getActivity().invalidateOptionsMenu();
+    }
+
+    private void pause() {
+        mMediaPlayer.pause();
+        getActivity().invalidateOptionsMenu();
+    }
+
+    private void resume() {
+        mMediaPlayer.seekTo(mCurrentPosition);
+        mMediaPlayer.start();
+        getActivity().invalidateOptionsMenu();
     }
 
     private void teardown() {
         mMediaPlayer.stop();
         mVisualizer.setEnabled(false);
-        mFrameLayout.removeView(mVisualizerView);
+        mRelativeLayout.removeView(mVisualizerView);
+        getActivity().invalidateOptionsMenu();
     }
 
     private void showDialog() {
-        final ArrayAdapter<Field> adapter = new ArrayAdapter<Field>(getActivity(), android.R.layout.select_dialog_singlechoice);
+        final ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.select_dialog_singlechoice);
         Field[] fields = R.raw.class.getFields();
         for (Field field : fields) {
-            adapter.add(field);
+            adapter.add(getFileNameFormatted(field.getName()));
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Select Audio:");
+        builder.setIcon(android.R.drawable.ic_menu_search);
         builder.setAdapter(adapter, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int position) {
-                        setAudio(adapter.getItem(position));
+                        setAudio(getFileNameRaw(adapter.getItem(position)));
                     }
                 }
         );
         builder.show();
+    }
+
+    private String getFileNameRaw(String name) {
+        return name.replace(" - ", "___").replace(' ', '_').toLowerCase();
+    }
+
+    private String getFileNameFormatted(String name) {
+        return WordUtils.capitalize(name.replace("___", "_-_").replace('_', ' '));
     }
 
     private Visualizer.OnDataCaptureListener mOnDataCaptureListener = new Visualizer.OnDataCaptureListener() {

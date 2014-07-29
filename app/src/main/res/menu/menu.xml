@@ -2,6 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/action_restart"
+        android:icon="@android:drawable/ic_media_rew"
+        android:title="@string/action_restart"
+        android:showAsAction="always"/>
+
+    <item
         android:id="@+id/action_feedback"
         android:icon="@android:drawable/ic_media_play"
         android:title="@string/action_play"
