@@ -21,7 +21,7 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import org.apache.commons.lang.WordUtils;
+import com.ambergleam.visualizer.utils.StringFormat;
 
 import java.lang.reflect.Field;
 
@@ -148,7 +148,7 @@ public class VisualizerFragment extends Fragment {
     }
 
     private void updateTime() {
-        mCurrentTimeTextView.setText(getTimeFormatted(mCurrentPosition));
+        mCurrentTimeTextView.setText(StringFormat.getTimeFormatted(mCurrentPosition));
     }
 
     private void setAudio(String name) {
@@ -157,15 +157,15 @@ public class VisualizerFragment extends Fragment {
             int audioId = field.getInt(field);
             if (mAudioId != audioId) {
                 if (mMediaPlayer != null) {
-                    teardown();
+                    destroy();
                 }
                 mAudioId = audioId;
                 setup();
             }
         } catch (IllegalAccessException e) {
-            Log.e(TAG, "IllegalAccessException: " + e.getStackTrace());
+            Log.e(TAG, "IllegalAccessException: " + e.getStackTrace().toString());
         } catch (NoSuchFieldException e) {
-            Log.e(TAG, "NoSuchFieldException: " + e.getStackTrace());
+            Log.e(TAG, "NoSuchFieldException: " + e.getStackTrace().toString());
         }
         updateUI(name);
         getActivity().invalidateOptionsMenu();
@@ -173,8 +173,8 @@ public class VisualizerFragment extends Fragment {
 
     private void updateUI(String name) {
         mRelativeLayout.setVisibility(View.VISIBLE);
-        mTitleTextView.setText(getFileNameFormatted(name));
-        mDurationTimeTextView.setText(getTimeFormatted(mMediaPlayer.getDuration()));
+        mTitleTextView.setText(StringFormat.getFileNameFormatted(name));
+        mDurationTimeTextView.setText(StringFormat.getTimeFormatted(mMediaPlayer.getDuration()));
         mSeekBar.setMax(mMediaPlayer.getDuration());
         mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -183,9 +183,9 @@ public class VisualizerFragment extends Fragment {
                     if (mMediaPlayer.isPlaying()) {
                         pause();
                         mCurrentPosition = progress;
+                        updateTime();
                         resume();
                     } else {
-                        pause();
                         mCurrentPosition = progress;
                         updateTime();
                     }
@@ -240,6 +240,7 @@ public class VisualizerFragment extends Fragment {
 
     private void reset() {
         mCurrentPosition = 0;
+        mSeekBar.setProgress(0);
         mMediaPlayer.pause();
         stopTime();
         updateTime();
@@ -248,12 +249,19 @@ public class VisualizerFragment extends Fragment {
 
     private void resume() {
         mMediaPlayer.seekTo(mCurrentPosition);
-        mMediaPlayer.start();
-        startTime();
-        getActivity().invalidateOptionsMenu();
+        mMediaPlayer.setOnSeekCompleteListener(new MediaPlayer.OnSeekCompleteListener() {
+            @Override
+            public void onSeekComplete(MediaPlayer mp) {
+                mMediaPlayer.start();
+                startTime();
+                getActivity().invalidateOptionsMenu();
+            }
+        });
     }
 
-    private void teardown() {
+    private void destroy() {
+        mCurrentPosition = 0;
+        mSeekBar.setProgress(0);
         mMediaPlayer.stop();
         stopTime();
         updateTime();
@@ -265,7 +273,7 @@ public class VisualizerFragment extends Fragment {
         final ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.select_dialog_singlechoice);
         Field[] fields = R.raw.class.getFields();
         for (Field field : fields) {
-            adapter.add(getFileNameFormatted(field.getName()));
+            adapter.add(StringFormat.getFileNameFormatted(field.getName()));
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Select Audio:");
@@ -273,32 +281,11 @@ public class VisualizerFragment extends Fragment {
         builder.setAdapter(adapter, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int position) {
-                        setAudio(getFileNameRaw(adapter.getItem(position)));
+                        setAudio(StringFormat.getFileNameRaw(adapter.getItem(position)));
                     }
                 }
         );
         builder.show();
-    }
-
-    private String getTimeFormatted(int ms) {
-        StringBuilder sb = new StringBuilder();
-        int minutes = ((ms / 1000) / 60);
-        sb.append(minutes);
-        sb.append(":");
-        int seconds = ((ms / 1000) % 60);
-        if (seconds < 10) {
-            sb.append("0");
-        }
-        sb.append(seconds);
-        return sb.toString();
-    }
-
-    private String getFileNameRaw(String name) {
-        return name.replace(" - ", "___").replace(' ', '_').toLowerCase();
-    }
-
-    private String getFileNameFormatted(String name) {
-        return WordUtils.capitalize(name.replace("___", "_-_").replace('_', ' '));
     }
 
     private Visualizer.OnDataCaptureListener mOnDataCaptureListener = new Visualizer.OnDataCaptureListener() {
