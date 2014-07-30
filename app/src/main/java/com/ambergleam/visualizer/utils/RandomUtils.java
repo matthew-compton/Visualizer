@@ -26,7 +26,7 @@ public class RandomUtils {
     }
 
     public static int getRandomFadedColor() {
-        int a = ((int) sRandom.nextGaussian() * 50 + 128);
+        int a = ((int) sRandom.nextGaussian() * 40 + 140);
         int r = sRandom.nextInt(255);
         int g = sRandom.nextInt(255);
         int b = sRandom.nextInt(255);

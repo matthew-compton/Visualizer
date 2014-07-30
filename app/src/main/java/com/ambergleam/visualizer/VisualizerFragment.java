@@ -30,6 +30,10 @@ public class VisualizerFragment extends Fragment {
 
     private static final String TAG = VisualizerFragment.class.getSimpleName();
 
+    private static final String KEY_AUDIO_ID = TAG + ".audioid";
+    private static final String KEY_POSITION = TAG + ".position";
+    private static final String KEY_FILE_NAME = TAG + ".filename";
+
     private MediaPlayer mMediaPlayer;
     private Visualizer mVisualizer;
 
@@ -44,8 +48,9 @@ public class VisualizerFragment extends Fragment {
     private SeekBar mSeekBar;
     private Handler mSeekBarHandler = new Handler();
 
+    private String mFileName;
     private int mAudioId;
-    private int mCurrentPosition;
+    private int mPosition;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -63,7 +68,18 @@ public class VisualizerFragment extends Fragment {
         mDurationTimeTextView = (TextView) view.findViewById(R.id.time_total);
         mSeekBar = (SeekBar) view.findViewById(R.id.seek_bar);
 
-        mAudioId = 0;
+        if (savedInstanceState != null) {
+            mFileName = savedInstanceState.getString(KEY_FILE_NAME, null);
+            mAudioId = savedInstanceState.getInt(KEY_AUDIO_ID, 0);
+            mPosition = savedInstanceState.getInt(KEY_POSITION, 0);
+            if (mFileName != null && mAudioId != 0) {
+                setup();
+            }
+        } else {
+            mFileName = null;
+            mAudioId = 0;
+            mPosition = 0;
+        }
 
         return view;
     }
@@ -131,6 +147,14 @@ public class VisualizerFragment extends Fragment {
         }
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle bundle) {
+        super.onSaveInstanceState(bundle);
+        bundle.putInt(KEY_AUDIO_ID, mAudioId);
+        bundle.putInt(KEY_POSITION, mPosition);
+        bundle.putString(KEY_FILE_NAME, mFileName);
+    }
+
     private Runnable mRunnable = new Runnable() {
         @Override
         public void run() {
@@ -140,8 +164,8 @@ public class VisualizerFragment extends Fragment {
 
     private void startTime() {
         updateTime();
-        mCurrentPosition += 1000;
-        mSeekBar.setProgress(mCurrentPosition);
+        mPosition += 1000;
+        mSeekBar.setProgress(mPosition);
 
         mSeekBarHandler.postDelayed(mRunnable, 1000);
     }
@@ -151,7 +175,7 @@ public class VisualizerFragment extends Fragment {
     }
 
     private void updateTime() {
-        mCurrentTimeTextView.setText(StringUtils.getTimeFormatted(mCurrentPosition));
+        mCurrentTimeTextView.setText(StringUtils.getTimeFormatted(mPosition));
     }
 
     private void setAudio(String name) {
@@ -163,6 +187,7 @@ public class VisualizerFragment extends Fragment {
                     destroy();
                 }
                 mAudioId = audioId;
+                mFileName = StringUtils.getFileNameFormatted(name);
                 setup();
             }
         } catch (IllegalAccessException e) {
@@ -170,26 +195,55 @@ public class VisualizerFragment extends Fragment {
         } catch (NoSuchFieldException e) {
             Log.e(TAG, "NoSuchFieldException: " + e.getStackTrace().toString());
         }
-        updateUI(name);
+    }
+
+    private void setup() {
+        mVisualizerView = new VisualizerView(getActivity());
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        params.gravity = Gravity.CENTER;
+        mVisualizerView.setLayoutParams(params);
+        mFrame.addView(mVisualizerView);
+
+        mMediaPlayer = MediaPlayer.create(getActivity(), mAudioId);
+        mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                mPosition = 0;
+                mSeekBar.setProgress(0);
+                mMediaPlayer.pause();
+                stopTime();
+                updateTime();
+                getActivity().invalidateOptionsMenu();
+            }
+        });
+
+        mVisualizer = new Visualizer(mMediaPlayer.getAudioSessionId());
+        mVisualizer.setCaptureSize(Visualizer.getCaptureSizeRange()[1]);
+        mVisualizer.setDataCaptureListener(mOnDataCaptureListener, Visualizer.getMaxCaptureRate() / 2, true, false);
+        mVisualizer.setEnabled(true);
+
+        updateUI();
         getActivity().invalidateOptionsMenu();
     }
 
-    private void updateUI(String name) {
+    private void updateUI() {
         mScreen.setVisibility(View.VISIBLE);
-        mTitleTextView.setText(StringUtils.getFileNameFormatted(name));
+        mTitleTextView.setText(mFileName);
         mDurationTimeTextView.setText(StringUtils.getTimeFormatted(mMediaPlayer.getDuration()));
+        updateTime();
         mSeekBar.setMax(mMediaPlayer.getDuration());
+        mSeekBar.setProgress(mPosition);
         mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
                     if (mMediaPlayer.isPlaying()) {
                         pause();
-                        mCurrentPosition = progress;
+                        mPosition = progress;
                         updateTime();
                         resume();
                     } else {
-                        mCurrentPosition = progress;
+                        mPosition = progress;
                         updateTime();
                     }
                 }
@@ -207,34 +261,6 @@ public class VisualizerFragment extends Fragment {
         });
     }
 
-    private void setup() {
-        mVisualizerView = new VisualizerView(getActivity());
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-        params.gravity = Gravity.CENTER;
-        mVisualizerView.setLayoutParams(params);
-        mFrame.addView(mVisualizerView);
-
-        mMediaPlayer = MediaPlayer.create(getActivity(), mAudioId);
-        mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                mCurrentPosition = 0;
-                mSeekBar.setProgress(0);
-                mMediaPlayer.pause();
-                stopTime();
-                updateTime();
-                getActivity().invalidateOptionsMenu();
-            }
-        });
-
-        mVisualizer = new Visualizer(mMediaPlayer.getAudioSessionId());
-        mVisualizer.setCaptureSize(Visualizer.getCaptureSizeRange()[1]);
-        mVisualizer.setDataCaptureListener(mOnDataCaptureListener, Visualizer.getMaxCaptureRate() / 2, true, false);
-        mVisualizer.setEnabled(true);
-
-        getActivity().invalidateOptionsMenu();
-    }
-
     private void pause() {
         mMediaPlayer.pause();
         stopTime();
@@ -242,7 +268,7 @@ public class VisualizerFragment extends Fragment {
     }
 
     private void reset() {
-        mCurrentPosition = 0;
+        mPosition = 0;
         mSeekBar.setProgress(0);
         if (mMediaPlayer.isPlaying()) {
             mMediaPlayer.pause();
@@ -253,7 +279,7 @@ public class VisualizerFragment extends Fragment {
     }
 
     private void resume() {
-        mMediaPlayer.seekTo(mCurrentPosition);
+        mMediaPlayer.seekTo(mPosition);
         mMediaPlayer.setOnSeekCompleteListener(new MediaPlayer.OnSeekCompleteListener() {
             @Override
             public void onSeekComplete(MediaPlayer mp) {
@@ -265,7 +291,7 @@ public class VisualizerFragment extends Fragment {
     }
 
     private void destroy() {
-        mCurrentPosition = 0;
+        mPosition = 0;
         mSeekBar.setProgress(0);
         mMediaPlayer.stop();
         stopTime();
