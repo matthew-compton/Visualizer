@@ -2,7 +2,7 @@ package com.ambergleam.visualizer.utils;
 
 import org.apache.commons.lang.WordUtils;
 
-public class StringFormat {
+public class StringUtils {
 
     public static String getTimeFormatted(int ms) {
         StringBuilder sb = new StringBuilder();

@@ -22,7 +22,7 @@ import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import com.ambergleam.visualizer.utils.StringFormat;
+import com.ambergleam.visualizer.utils.StringUtils;
 
 import java.lang.reflect.Field;
 
@@ -151,7 +151,7 @@ public class VisualizerFragment extends Fragment {
     }
 
     private void updateTime() {
-        mCurrentTimeTextView.setText(StringFormat.getTimeFormatted(mCurrentPosition));
+        mCurrentTimeTextView.setText(StringUtils.getTimeFormatted(mCurrentPosition));
     }
 
     private void setAudio(String name) {
@@ -176,8 +176,8 @@ public class VisualizerFragment extends Fragment {
 
     private void updateUI(String name) {
         mScreen.setVisibility(View.VISIBLE);
-        mTitleTextView.setText(StringFormat.getFileNameFormatted(name));
-        mDurationTimeTextView.setText(StringFormat.getTimeFormatted(mMediaPlayer.getDuration()));
+        mTitleTextView.setText(StringUtils.getFileNameFormatted(name));
+        mDurationTimeTextView.setText(StringUtils.getTimeFormatted(mMediaPlayer.getDuration()));
         mSeekBar.setMax(mMediaPlayer.getDuration());
         mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -278,7 +278,7 @@ public class VisualizerFragment extends Fragment {
         final ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.select_dialog_singlechoice);
         Field[] fields = R.raw.class.getFields();
         for (Field field : fields) {
-            adapter.add(StringFormat.getFileNameFormatted(field.getName()));
+            adapter.add(StringUtils.getFileNameFormatted(field.getName()));
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Select Audio:");
@@ -286,7 +286,7 @@ public class VisualizerFragment extends Fragment {
         builder.setAdapter(adapter, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int position) {
-                        setAudio(StringFormat.getFileNameRaw(adapter.getItem(position)));
+                        setAudio(StringUtils.getFileNameRaw(adapter.getItem(position)));
                     }
                 }
         );
